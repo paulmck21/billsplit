@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <style>
+        html {
+            --color-white: #ffffff;
+            --color-black: #1e1e1e;
+            --color-grey: #3e3e3e;
+            --color-lightGrey: #dcdcdc;
+            --color-blue: #3f51b5;
+            --color-pink: #e91e63;
+            --color-red: #f44336;
+            --color-lightBlue: #2196f3;
+            --color-green: #009688;
+            --color-yellow: #ffc107;
+        }
+
+        h1,
+        h2,
+        h3,
+        p,
+        a,
+        input,
+        li {
+            font-family: Arial, Helvetica, sans-serif;
+            color: var(--color-black);
+        }
+
+        ul {
+            list-style: none;
+            padding-left: 0;
+        }
+
+        a {
+            color: var(--color-blue);
+            text-decoration: none;
+        }
+
+        .container {
+            max-width: 640px;
+            margin: 50px auto;
+        }
+        select {
+            border: 1px solid var(--color-black);
+        }
+        select,
+        input {
+            display: block;
+            margin-bottom: 12px;
+        }
+
+        input[type=checkbox] {
+            display: inline-block;
+        }
+
+        input,
+        button {
+            outline: none;
+            border-radius: 6px;
+            border: 1px solid var(--color-black);
+            padding: 6px;
+        }
+        
+        button {
+            margin-top: 18px;
+            display: block;
+            background-color: var(--color-blue);
+            color: var(--color-white);
+            transition: all 0.3s ease-in-out;
+        }
+
+        button:hover {
+            box-shadow: 0 5px 5px 0 rgba(0,0,0,0.3);
+        }
+    </style>
+    <title>Bill Split</title>
+</head>
+<body>
+    <div class="container">
+        <h1>Bill Splitting Test</h1>
+        <select on-change="() => onSelectChange()" id="select" type="text">
+            <option value="0">Jane</option>
+            <option value="1">David</option>
+            <option value="2">Hugh</option>
+            <option value="3">Ollie</option>
+            <option value="4">James</option>
+            <option value="5">Paul</option>
+        </select>
+        <input id="amount" type="number">
+        <div class="debtor">
+            <input checked="true" class="checkbox" on-change="() => onCheckboxChange()" type="checkbox" name="Jane" id="checkbox-0" value="0">
+            <label for="checkbox-0">Jane</label>
+        </div>
+        <div class="debtor">
+            <input checked="true" class="checkbox" on-change="onCheckboxChange" type="checkbox" name="David" id="checkbox-1" value="1">
+            <label for="checkbox-1">David</label>
+        </div>
+        <div class="debtor">
+            <input checked="true" class="checkbox" on-change="() => onCheckboxChange()" type="checkbox" name="Hugh" id="checkbox-2" value="2">
+            <label for="checkbox-2">Hugh</label>
+        </div>
+        <div class="debtor">
+            <input checked="true" class="checkbox" on-change="() => onCheckboxChange()" type="checkbox" name="Ollie" id="checkbox-3" value="3">
+            <label for="checkbox-3">Ollie</label>
+        </div>
+        <div class="debtor">
+            <input checked="true" class="checkbox" on-change="() => onCheckboxChange()" type="checkbox" name="James" id="checkbox-4" value="4">
+            <label for="checkbox-4">James</label>
+        </div>
+        <div class="debtor">
+            <input checked="true" class="checkbox" on-change="() => onCheckboxChange()" type="checkbox" name="Paul" id="checkbox-5" value="5">
+            <label for="checkbox-5">Paul</label>
+        </div>
+        <button id="button" on-click="onSubmit">Split that shit</button>
+        <div>
+            <h3>Tally</h3>
+            <div id="tally">
+                <p>Add expenses to tally that shit up</p>
+            </div>
+        </div>
+        <div id="results">
+    </div>
+
+    </div>
+</body>
+<script>
+    let tally = [
+        [0, 0],
+        [0, 0],
+        [0, 0],
+        [0, 0],
+        [0, 0],
+        [0, 0],
+    ]
+    var select = document.getElementById('select');
+    var amount = document.getElementById('amount');
+    var checkboxes = document.getElementsByClassName('checkbox');
+    var button = document.getElementById('button');
+    var results = document.getElementById('results');
+    var tallyView = document.getElementById('tally');
+    let payment = {
+        payer: parseInt(select.value, 10),
+        amount: 0,
+        debtors: [
+            true,
+            true,
+            true,
+            true,
+            true,
+            true,
+        ],
+    };
+
+    const names = [
+        'Jane',
+        'David',
+        'Hugh',
+        'Ollie',
+        'James',
+        'Paul',
+    ];
+    function setUpEventListeners() {
+        select.addEventListener('change', onSelectChange);
+        amount.addEventListener('change', onNumberChange);
+        button.addEventListener('click', onSubmitClicked);
+        for (let i = 0; i < checkboxes.length; i += 1) {
+            const box = checkboxes[i];
+            box.addEventListener('change', onCheckboxChange);
+        }
+    }
+    function onSelectChange(e) {
+        payment.payer = parseInt(e.target.value);
+    }
+    function onNumberChange(e) {
+        payment.amount = parseInt(e.target.value, 10);
+    }
+    function onCheckboxChange(e) {
+        const debtor = e.target.value;
+        const checked = e.target.checked;
+        payment.debtors[debtor] = checked;
+    }
+    function onSubmitClicked(e) {
+        const entryHtml = createEntry();
+        results.appendChild(entryHtml);
+        updateTallyView();
+        resetValues();
+    }
+    function createEntry() {
+        const payerHtml = document.createElement('h3');
+        const amountHtml = document.createElement('h4');
+        const debtorListHtml = document.createElement('ul');
+        const numOfDebtors = payment.debtors.reduce((a, b) => a + b);
+        payerHtml.innerText = names[payment.payer];
+        results.appendChild(payerHtml);
+        amountHtml.innerText = payment.amount;
+        results.appendChild(amountHtml);
+        for (let i = 0; i < payment.debtors.length; i++) {
+            const debtorHtml = document.createElement('li');
+            const amountOwed = payment.debtors[i] ? payment.amount / numOfDebtors : 0;
+            debtorHtml.innerText = `${names[i]} - ${amountOwed.toFixed(2)}`;
+            payment.debtors[i];
+            debtorListHtml.appendChild(debtorHtml);
+            updateTally(i, amountOwed);
+        }
+        let storagePayments = localStorage.getItem('payments');
+        if (!storagePayments) {
+            localStorage.setItem('payments', '');
+            storagePayments = '';
+        }
+        localStorage.setItem('payments', storagePayments + Object.entries(payment)+ '---------------');
+        return debtorListHtml;
+    }
+    function updateTally(i, amountOwed) {
+        if (i === payment.payer) {
+            tally[i][0] += payment.amount;
+        } else if (payment.debtors[i]) {
+            tally[i][1] += amountOwed;
+        }
+    }
+    function updateTallyView() {
+        const tallyList = document.createElement('ul');
+        for (let i = 0; i < payment.debtors.length; i++) {
+            const tallyHtml = document.createElement('li');
+
+            const nameHtml = document.createElement('h4');
+            nameHtml.innerHTML = names[i];
+
+            const tallyDataHtml = document.createElement('p');
+            tallyDataHtml.innerText = `Paid: ${tally[i][0].toFixed(2)} 
+                Owed: ${tally[i][1].toFixed(2)} 
+                Net: `;
+
+            const netHtml = document.createElement('span');
+            const netAmount = (tally[i][0] - tally[i][1]).toFixed(2);
+            netHtml.innerHTML = netAmount;
+            if (netAmount < 0) netHtml.style.color = 'red';
+
+            tallyDataHtml.appendChild(netHtml);
+            tallyHtml.appendChild(nameHtml);
+            tallyHtml.appendChild(tallyDataHtml);
+            tallyList.appendChild(tallyHtml);
+        }
+        tallyView.replaceChild(tallyList, tallyView.firstChild);
+        updateTallyStorage();
+    }
+    function init() {
+        setUpEventListeners();
+        initializeFromStorage();
+    }
+    function resetValues() {
+        amount.value = 0;
+    }
+    function updateTallyStorage() {
+        localStorage.setItem('tally', tally);
+    }
+    function initializeFromStorage() {
+        const tallyString = localStorage.getItem('tally');
+        if (!tallyString) {
+            return;
+        }
+        const separateNums = tallyString.split(',');
+        const arr = [];
+        for (let i = 0; i < separateNums.length; i += 1) {
+            let el = separateNums[i];
+            el = parseInt(el, 10);
+            if (i % 2 === 0) {
+                arr.push([el])
+            } else {
+                arr[Math.floor(i / 2)].push(el);
+            }
+        }
+        tally = arr;
+        updateTallyView();
+    }
+    init();
+</script>
+</html>
