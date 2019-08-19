@@ -24,6 +24,7 @@
         p,
         a,
         input,
+        label,
         li {
             font-family: Arial, Helvetica, sans-serif;
             color: var(--color-black);
@@ -55,7 +56,6 @@
         input[type=checkbox] {
             display: inline-block;
         }
-
         input,
         button {
             outline: none;
@@ -63,7 +63,6 @@
             border: 1px solid var(--color-black);
             padding: 6px;
         }
-        
         button {
             margin-top: 18px;
             display: block;
@@ -75,45 +74,33 @@
         button:hover {
             box-shadow: 0 5px 5px 0 rgba(0,0,0,0.3);
         }
+        label {
+            margin-bottom: 8px;
+        }
     </style>
     <title>Bill Split</title>
 </head>
 <body>
     <div class="container">
-        <h1>Bill Splitting Test</h1>
+        <h1>Bill Splitting Test App</h1>
+        <div>
+            <label for="addPerson">Add someone to the group (enter to submit):</label>
+            <input type="text" id="addPerson">
+        </div>
         <select on-change="() => onSelectChange()" id="select" type="text">
-            <option value="0">Jane</option>
-            <option value="1">David</option>
-            <option value="2">Hugh</option>
-            <option value="3">Ollie</option>
-            <option value="4">James</option>
-            <option value="5">Paul</option>
+            <option default>Who payed?</option>
         </select>
+        <label for="amount">How much?</label>
         <input id="amount" type="number">
-        <div class="debtor">
-            <input checked="true" class="checkbox" on-change="() => onCheckboxChange()" type="checkbox" name="Jane" id="checkbox-0" value="0">
-            <label for="checkbox-0">Jane</label>
+        <label>Who was involved?</label>
+        <div id="checkboxes">
         </div>
-        <div class="debtor">
-            <input checked="true" class="checkbox" on-change="onCheckboxChange" type="checkbox" name="David" id="checkbox-1" value="1">
-            <label for="checkbox-1">David</label>
+
+        <div>
+            <label for="note">Add a note:</label>
+            <input type="text" id="note">
         </div>
-        <div class="debtor">
-            <input checked="true" class="checkbox" on-change="() => onCheckboxChange()" type="checkbox" name="Hugh" id="checkbox-2" value="2">
-            <label for="checkbox-2">Hugh</label>
-        </div>
-        <div class="debtor">
-            <input checked="true" class="checkbox" on-change="() => onCheckboxChange()" type="checkbox" name="Ollie" id="checkbox-3" value="3">
-            <label for="checkbox-3">Ollie</label>
-        </div>
-        <div class="debtor">
-            <input checked="true" class="checkbox" on-change="() => onCheckboxChange()" type="checkbox" name="James" id="checkbox-4" value="4">
-            <label for="checkbox-4">James</label>
-        </div>
-        <div class="debtor">
-            <input checked="true" class="checkbox" on-change="() => onCheckboxChange()" type="checkbox" name="Paul" id="checkbox-5" value="5">
-            <label for="checkbox-5">Paul</label>
-        </div>
+
         <button id="button" on-click="onSubmit">Split that shit</button>
         <div>
             <h3>Tally</h3>
@@ -122,53 +109,48 @@
             </div>
         </div>
         <div id="results">
-    </div>
+            <h3>Payment Info</h3>
+        </div>
 
     </div>
 </body>
 <script>
-    let tally = [
-        [0, 0],
-        [0, 0],
-        [0, 0],
-        [0, 0],
-        [0, 0],
-        [0, 0],
-    ]
+    // TODO: sanitise strings to only include letetrs and numbers
+
+    var addPerson = document.getElementById('addPerson');
     var select = document.getElementById('select');
     var amount = document.getElementById('amount');
+    var checkboxesHtml = document.getElementById('checkboxes');
+    var noteHtml = document.getElementById('note');
     var checkboxes = document.getElementsByClassName('checkbox');
     var button = document.getElementById('button');
     var results = document.getElementById('results');
     var tallyView = document.getElementById('tally');
+    let tally = [];
     let payment = {
         payer: parseInt(select.value, 10),
         amount: 0,
-        debtors: [
-            true,
-            true,
-            true,
-            true,
-            true,
-            true,
-        ],
+        note: '',
+        debtors: [],
     };
+    let names = [];
 
-    const names = [
-        'Jane',
-        'David',
-        'Hugh',
-        'Ollie',
-        'James',
-        'Paul',
-    ];
     function setUpEventListeners() {
+        addPerson.addEventListener('keydown', onAddPersonChange);
         select.addEventListener('change', onSelectChange);
         amount.addEventListener('change', onNumberChange);
+        note.addEventListener('change', onNoteChange);
         button.addEventListener('click', onSubmitClicked);
         for (let i = 0; i < checkboxes.length; i += 1) {
             const box = checkboxes[i];
             box.addEventListener('change', onCheckboxChange);
+        }
+    }
+
+    function onAddPersonChange(e) {
+        if (e.keyCode === 13) {
+            addPersonEntry(e.target.value);
+            e.target.value = '';
         }
     }
     function onSelectChange(e) {
@@ -177,12 +159,15 @@
     function onNumberChange(e) {
         payment.amount = parseInt(e.target.value, 10);
     }
+    function onNoteChange(e) {
+        payment.note = e.target.value || '';
+    }
     function onCheckboxChange(e) {
         const debtor = e.target.value;
         const checked = e.target.checked;
         payment.debtors[debtor] = checked;
     }
-    function onSubmitClicked(e) {
+    function onSubmitClicked() {
         const entryHtml = createEntry();
         results.appendChild(entryHtml);
         updateTallyView();
@@ -191,12 +176,15 @@
     function createEntry() {
         const payerHtml = document.createElement('h3');
         const amountHtml = document.createElement('h4');
+        const noteHtml = document.createElement('p');
         const debtorListHtml = document.createElement('ul');
         const numOfDebtors = payment.debtors.reduce((a, b) => a + b);
         payerHtml.innerText = names[payment.payer];
         results.appendChild(payerHtml);
         amountHtml.innerText = payment.amount;
+        noteHtml.innerText = payment.note;
         results.appendChild(amountHtml);
+        results.appendChild(noteHtml);
         for (let i = 0; i < payment.debtors.length; i++) {
             const debtorHtml = document.createElement('li');
             const amountOwed = payment.debtors[i] ? payment.amount / numOfDebtors : 0;
@@ -210,15 +198,14 @@
             localStorage.setItem('payments', '');
             storagePayments = '';
         }
-        localStorage.setItem('payments', storagePayments + Object.entries(payment)+ '---------------');
+        localStorage.setItem('payments', storagePayments + Object.entries(payment)+ ',');
         return debtorListHtml;
     }
     function updateTally(i, amountOwed) {
         if (i === payment.payer) {
             tally[i][0] += payment.amount;
-        } else if (payment.debtors[i]) {
-            tally[i][1] += amountOwed;
         }
+        tally[i][1] += amountOwed;
     }
     function updateTallyView() {
         const tallyList = document.createElement('ul');
@@ -230,7 +217,7 @@
 
             const tallyDataHtml = document.createElement('p');
             tallyDataHtml.innerText = `Paid: ${tally[i][0].toFixed(2)} 
-                Owed: ${tally[i][1].toFixed(2)} 
+                Owes: ${tally[i][1].toFixed(2)} 
                 Net: `;
 
             const netHtml = document.createElement('span');
@@ -247,8 +234,8 @@
         updateTallyStorage();
     }
     function init() {
-        setUpEventListeners();
         initializeFromStorage();
+        setUpEventListeners();
     }
     function resetValues() {
         amount.value = 0;
@@ -257,6 +244,25 @@
         localStorage.setItem('tally', tally);
     }
     function initializeFromStorage() {
+        initializeTally();
+        const namesFromStorage = localStorage.getItem('names');
+        names = namesFromStorage ? namesFromStorage.split(',') : [];
+        for (let i = 0; i < names.length; i++) {
+            payment.debtors.push(true);
+            createCheckbox(i);
+            createOption(i);
+        }
+        updateTallyView();
+    }
+    function initializePayments() {
+        const paymentsString = localStorage.getItem('payments');
+        if (!paymentsString) {
+            return;
+        }
+        const paymentsArr = paymentsString.split(',');
+        console.log(paymentsArr);
+    }
+    function initializeTally() {
         const tallyString = localStorage.getItem('tally');
         if (!tallyString) {
             return;
@@ -273,8 +279,119 @@
             }
         }
         tally = arr;
-        updateTallyView();
+    }
+    // Add to tally
+    // Add to payment debtors
+    // Add to names
+    // add checkbox
+    // add select option
+    function addPersonEntry(name) {
+        const i = tally.length;
+        tally.push([0, 0]);
+        payment.debtors.push(true);
+        names.push(name);
+        localStorage.setItem('names', names);
+        updateTallyStorage();
+        createCheckbox(i);
+    }
+
+    function createCheckbox(i) {
+        const newCheckboxContainer = document.createElement('div');
+        newCheckboxContainer.classList.add('debtor');
+        const newCheckbox = document.createElement('input');
+        newCheckbox.type = 'checkbox';
+        newCheckbox.checked = true;
+        newCheckbox.name = names[i];
+        newCheckbox.value = i;
+        newCheckbox.id = `checkbox-${i}`;
+        newCheckbox.addEventListener('change', onCheckboxChange);
+        const label = document.createElement('label');
+        label.for = `checkbox-${i}`;
+        label.innerText = names[i];
+        newCheckboxContainer.appendChild(newCheckbox);
+        newCheckboxContainer.appendChild(label);
+        checkboxesHtml.appendChild(newCheckboxContainer);
+    }
+    function createOption(i) {
+        const option = document.createElement('option');
+        option.value = i;
+        option.innerText = names[i];
+        select.appendChild(option);
     }
     init();
+
+    // Within my self imposed limits of not using tools
+    // and not googling or referencing anything, this is
+    // a basic test to aid in dev without breaking things
+    // funtions: 
+    // setUpEventListeners
+    // onAddPersonChange
+    // onSelectChange
+    // onNumberChange
+    // onNoteChange
+    // onCheckboxChange
+    // onSubmitClicked
+    // createEntry
+    // updateTally
+    // updateTallyView
+    // init
+    // resetValues
+    // updateTallyStorage
+    // initializeFromStorage
+    // initializePayments
+    // initializeTally
+    // addPersonEntry
+    // createCheckbox
+    // createOption
+    // test
+
+    function test() {
+        // Setup
+        localStorage.removeItem('tally');
+        localStorage.removeItem('names');
+        localStorage.removeItem('payments');
+        const checkboxesLen = checkboxesHtml.children.length;
+        for (let i = 0; i < checkboxesLen; i++) {
+            checkboxesHtml.removeChild(checkboxesHtml.children[0]);            
+        }
+
+        tally = [];
+        payment = {
+            payer: parseInt(select.value, 10),
+            amount: 0,
+            note: '',
+            debtors: [],
+        };
+        names = [];
+
+
+        // Add person
+        const addPersonEvent = {
+            keyCode: 13,
+            target: addPerson,
+        }
+        addPerson.value = 'testPerson1';
+        onAddPersonChange(addPersonEvent);
+        console.log('test: first persons name to be recorded - ', names[0] === 'testPerson1');
+        addPerson.value = 'testPerson2';
+        onAddPersonChange(addPersonEvent);
+        addPerson.value = 'testPerson3';
+        onAddPersonChange(addPersonEvent);
+
+        // Split bill between all people
+        amount.value = 300;
+        select.selectedIndex = 1;
+
+        // Split bill between some people
+
+        // Check localstorage stores information
+
+        // Check tally initialisation from storage parses correctly
+        // Check names initialisation from storage parses correctly
+        // Check payments initialisation from storage parses correctly
+
+        // Teardown
+    }
+
 </script>
 </html>
