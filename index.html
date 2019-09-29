@@ -77,6 +77,19 @@
         label {
             margin-bottom: 8px;
         }
+        input[type=checkbox] + label {
+            display: inline-block;
+            padding: 5px;
+            margin: 0 5px;
+            border-radius: 6px;
+            border: 1px solid var(--color-black);
+            background-color: var(--color-white);
+            transition: all 0.3s ease-in-out;
+            opacity: 0.75;
+        }
+        input[type=checkbox]:checked + label {
+            opacity: 1;
+        }
     </style>
     <title>Bill Split</title>
 </head>
@@ -115,7 +128,7 @@
     </div>
 </body>
 <script>
-    // TODO: sanitise strings to only include letetrs and numbers
+    // TODO: sanitise strings to only include letters and numbers
 
     var addPerson = document.getElementById('addPerson');
     var select = document.getElementById('select');
@@ -260,7 +273,6 @@
             return;
         }
         const paymentsArr = paymentsString.split(',');
-        console.log(paymentsArr);
     }
     function initializeTally() {
         const tallyString = localStorage.getItem('tally');
@@ -306,8 +318,9 @@
         newCheckbox.id = `checkbox-${i}`;
         newCheckbox.addEventListener('change', onCheckboxChange);
         const label = document.createElement('label');
-        label.for = `checkbox-${i}`;
+        label.for = names[i];
         label.innerText = names[i];
+        label.addEventListener('click', (e) => onCheckboxChange(e))
         newCheckboxContainer.appendChild(newCheckbox);
         newCheckboxContainer.appendChild(label);
         checkboxesHtml.appendChild(newCheckboxContainer);
@@ -322,7 +335,7 @@
 
     // Within my self imposed limits of not using tools
     // and not googling or referencing anything, this is
-    // a basic test to aid in dev without breaking things
+    // a basic test setup to aid in dev without breaking things
     // funtions: 
     // setUpEventListeners
     // onAddPersonChange
